@@ -256,7 +256,7 @@
         updateStats();
       } catch (error) {
         console.error("Error fetching data:", error);
-        document.getElementById('cards-container').innerHTML = `<div class="text-red-400 text-sm col-span-2 text-center py-6">⚠️ Data load nahi ho paya. Google Script/Sheet Check Karein.</div>`;
+        document.getElementById('cards-container').innerHTML = `<div class="text-red-400 text-sm col-span-2 text-center py-6">⚠️ Could not load data. Check now.</div>`;
       }
     }
 
@@ -266,7 +266,7 @@
       container.innerHTML = '';
 
       if (!rawSheetData || rawSheetData.length === 0) {
-        container.innerHTML = `<div class="text-slate-400 text-sm col-span-2 text-center py-6">Koi data nahi mila.</div>`;
+        container.innerHTML = `<div class="text-slate-400 text-sm col-span-2 text-center py-6">No data found.</div>`;
         return;
       }
 
@@ -339,7 +339,7 @@
       });
 
       if (count === 0) {
-        container.innerHTML = `<div class="text-slate-400 text-sm col-span-2 text-center py-6">Koi matching item nahi mila.</div>`;
+        container.innerHTML = `<div class="text-slate-400 text-sm col-span-2 text-center py-6">No matching item found.</div>`;
       }
     }
 
