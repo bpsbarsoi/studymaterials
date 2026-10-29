@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Library - Barsoi Public School</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      background-color: #080c14;
+      color: #e2e8f0;
+      font-family: system-ui, -apple-system, sans-serif;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.light-mode {
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+    .card-glow {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      transition: all 0.2s ease-in-out;
+    }
+    body.light-mode .card-glow {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+    }
+    .card-glow:hover {
+      border-color: #3b82f6;
+      transform: translateY(-2px);
+    }
+    .tab-btn.active {
+      background-color: #3b82f6;
+      color: #ffffff;
+    }
+    /* Mask to disable Google Drive corner pop-up button */
+    .iframe-mask {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 70px;
+      height: 60px;
+      z-index: 20;
+      background: transparent;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body class="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+
+  <!-- Header & Controls -->
+  <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <button onclick="handleBack()" id="back-btn" class="w-11 h-11 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-white hover:bg-slate-700 transition" style="display: none;">
+        <i class="fa-solid fa-arrow-left text-sm"></i>
+      </button>
+      <a href="index.html" id="home-back-btn" class="w-11 h-11 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-white hover:bg-slate-700 transition">
+        <i class="fa-solid fa-house text-sm"></i>
+      </a>
+      <div>
+        <h1 class="text-xl md:text-2xl font-bold tracking-wide" id="page-title">Digital Library</h1>
+        <p class="text-xs text-slate-400" id="page-subtitle">Explore books class and book wise</p>
+      </div>
+    </div>
+
+    <!-- Theme Toggle Button -->
+    <button onclick="toggleTheme()" class="w-11 h-11 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-yellow-400 hover:bg-slate-700 transition">
+      <i class="fa-solid fa-circle-half-stroke text-sm"></i>
+    </button>
+  </div>
+
+  <!-- Dashboard Stats Cards -->
+  <div class="grid grid-cols-3 gap-3" id="dashboard-stats">
+    <div class="card-glow rounded-2xl p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-xl text-blue-400">📚</div>
+      <div>
+        <h4 class="text-lg font-bold" id="stat-pdfs">0</h4>
+        <p class="text-[11px] text-slate-400">Total PDFs</p>
+      </div>
+    </div>
+    <div class="card-glow rounded-2xl p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-xl text-purple-400">🎓</div>
+      <div>
+        <h4 class="text-lg font-bold" id="stat-classes">0</h4>
+        <p class="text-[11px] text-slate-400">Classes</p>
+      </div>
+    </div>
+    <div class="card-glow rounded-2xl p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-xl text-emerald-400">📖</div>
+      <div>
+        <h4 class="text-lg font-bold" id="stat-books">0</h4>
+        <p class="text-[11px] text-slate-400">Books</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto" id="nav-tabs">
+    <button onclick="switchMainTab('library')" id="tab-library" class="tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 transition">📚 All Library</button>
+    <button onclick="switchMainTab('recent')" id="tab-recent" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 transition">⚡ Recent PDFs</button>
+    <button onclick="switchMainTab('favorites')" id="tab-favorites" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 transition">⭐ Favorites (<span id="fav-count">0</span>)</button>
+  </div>
+
+  <!-- Global Search Box -->
+  <div class="relative w-full" id="search-container">
+    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+    <input 
+      type="text" 
+      id="globalSearch" 
+      oninput="handleSearch()"
+      placeholder="Search by Class, Book, Subject or Title..." 
+      class="w-full bg-[#0d1322] border border-blue-900/60 rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none focus:border-blue-500 transition shadow-inner"
+    />
+  </div>
+
+  <!-- Breadcrumb Navigation -->
+  <div id="breadcrumb" class="text-xs text-slate-400 flex items-center gap-2">
+    <span class="text-blue-400 cursor-pointer hover:underline" onclick="resetView()">Library Home</span>
+    <span id="breadcrumb-sub"></span>
+  </div>
+
+  <!-- Main Container -->
+  <div id="main-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="text-slate-400 text-sm col-span-2 text-center py-12">
+      <i class="fa-solid fa-spinner fa-spin mr-2 text-lg"></i> Loading digital library...
+    </div>
+  </div>
+
+  <!-- PDF Preview Modal -->
+  <div id="pdfModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 md:p-6" style="display: none;">
+    <div id="modalBox" class="bg-[#0f172a] border border-slate-800 w-full max-w-4xl h-[90vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl relative">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-900/90">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-book-open-reader text-blue-400"></i>
+          <h3 id="modalTitle" class="font-bold text-sm text-white truncate max-w-[60vw]">PDF Reader</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- Fullscreen Button -->
+          <button onclick="toggleFullScreen()" title="Full Screen" class="w-9 h-9 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center transition">
+            <i class="fa-solid fa-expand text-xs" id="fsIcon"></i>
+          </button>
+          <!-- Close Button -->
+          <button onclick="closePdfModal()" class="w-9 h-9 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center transition">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+      </div>
+      <!-- Iframe Body with Mask -->
+      <div class="flex-1 bg-slate-950 relative overflow-hidden flex flex-col">
+        <div class="iframe-mask"></div>
+        <iframe id="pdfIframe" src="" class="w-full h-full border-0"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let libraryData = {}; 
+    let rawRecords = [];
+    let favorites = JSON.parse(localStorage.getItem('lib_favorites') || '[]');
+    let currentTab = 'library'; 
+    let currentView = 'classes'; 
+    let selectedClass = null;
+    let selectedBook = null;
+
+    // Web App URL
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby4T7rMmVNiYLH8D0OL0H1YLAeJKqlFNXQPsXF_eASdE_me3ipiyI2Md58xVfl-2zDqGg/exec";
+
+    async function initLibrary() {
+      try {
+        const response = await fetch(WEB_APP_URL);
+        rawRecords = await response.json();
+        
+        libraryData = {};
+        let booksSet = new Set();
+
+        rawRecords.forEach(item => {
+          let cls = item.className ? String(item.className).trim() : "General";
+          let book = item.book ? String(item.book).trim() : "General Book";
+          let subj = item.subject ? String(item.subject).trim() : "General Subject";
+
+          if (!cls.toLowerCase().includes("class")) {
+            cls = "Class " + cls;
+          }
+
+          if (!libraryData[cls]) libraryData[cls] = {};
+          if (!libraryData[cls][book]) libraryData[cls][book] = [];
+
+          libraryData[cls][book].push(item);
+          booksSet.add(book);
+        });
+
+        document.getElementById('stat-pdfs').innerText = rawRecords.length;
+        document.getElementById('stat-classes').innerText = Object.keys(libraryData).length;
+        document.getElementById('stat-books').innerText = booksSet.size;
+        updateFavCount();
+
+        renderClasses();
+      } catch (error) {
+        console.error("Error loading library:", error);
+        document.getElementById('main-container').innerHTML = `<div class="text-red-400 text-sm col-span-2 text-center py-10">Library data load karne me error aayi.</div>`;
+      }
+    }
+
+    function switchMainTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      document.getElementById('globalSearch').value = '';
+
+      if (tab === 'library') {
+        renderClasses();
+        document.getElementById('search-container').style.display = 'block';
+      } else if (tab === 'recent') {
+        renderRecentPdfs();
+        document.getElementById('search-container').style.display = 'none';
+      } else if (tab === 'favorites') {
+        renderFavorites();
+        document.getElementById('search-container').style.display = 'none';
+      }
+    }
+
+    function renderClasses() {
+      currentView = 'classes';
+      selectedClass = null;
+      selectedBook = null;
+
+      document.getElementById('page-title').innerText = "Digital Library";
+      document.getElementById('page-subtitle').innerText = "Select your class to explore books";
+      document.getElementById('breadcrumb-sub').innerHTML = '';
+      document.getElementById('back-btn').style.display = 'none';
+      document.getElementById('home-back-btn').style.display = 'flex';
+      document.getElementById('dashboard-stats').style.display = 'grid';
+
+      const container = document.getElementById('main-container');
+      container.innerHTML = '';
+
+      const classes = Object.keys(libraryData);
+      if (classes.length === 0) {
+        container.innerHTML = `<div class="text-slate-400 text-sm col-span-2 text-center py-10">Koi class data available nahi hai.</div>`;
+        return;
+      }
+
+      classes.forEach(cls => {
+        let totalBooks = Object.keys(libraryData[cls]).length;
+        let card = document.createElement('div');
+        card.className = "card-glow rounded-2xl p-5 flex items-center justify-between cursor-pointer group";
+        card.onclick = () => selectClass(cls);
+
+        card.innerHTML = `
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-2xl group-hover:scale-105 transition">
+              🎓
+            </div>
+            <div>
+              <h3 class="font-bold base group-hover:text-blue-400 transition">${cls}</h3>
+              <p class="text-xs text-slate-400 mt-0.5">${totalBooks} Books Available</p>
+            </div>
+          </div>
+          <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition">
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function selectClass(cls) {
+      currentView = 'books';
+      selectedClass = cls;
+      selectedBook = null;
+
+      document.getElementById('page-title').innerText = cls;
+      document.getElementById('page-subtitle').innerText = "Select a book";
+      document.getElementById('breadcrumb-sub').innerHTML = ` <i class="fa-solid fa-chevron-right text-[10px] mx-1"></i> <span class="text-white">${cls}</span>`;
+      document.getElementById('back-btn').style.display = 'flex';
+      document.getElementById('home-back-btn').style.display = 'none';
+      document.getElementById('dashboard-stats').style.display = 'none';
+
+      const container = document.getElementById('main-container');
+      container.innerHTML = '';
+
+      const books = Object.keys(libraryData[cls]);
+
+      books.forEach(book => {
+        let itemCount = libraryData[cls][book].length;
+        let card = document.createElement('div');
+        card.className = "card-glow rounded-2xl p-5 flex items-center justify-between cursor-pointer group";
+        card.onclick = () => selectBook(book);
+
+        card.innerHTML = `
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-2xl group-hover:scale-105 transition">
+              📚
+            </div>
+            <div>
+              <h3 class="font-bold base group-hover:text-purple-400 transition">${book}</h3>
+              <p class="text-xs text-slate-400 mt-0.5">${itemCount} Chapters / Files</p>
+            </div>
+          </div>
+          <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-purple-600 group-hover:text-white transition">
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function selectBook(book) {
+      currentView = 'files';
+      selectedBook = book;
+
+      document.getElementById('page-title').innerText = book;
+      document.getElementById('page-subtitle').innerText = `Chapters for ${selectedClass}`;
+      document.getElementById('breadcrumb-sub').innerHTML = ` 
+        <i class="fa-solid fa-chevron-right text-[10px] mx-1"></i> <span class="text-slate-400 cursor-pointer hover:underline" onclick="selectClass('${selectedClass}')">${selectedClass}</span>
+        <i class="fa-solid fa-chevron-right text-[10px] mx-1"></i> <span class="text-white">${book}</span>
+      `;
+
+      renderFiles(libraryData[selectedClass][book]);
+    }
+
+    function renderFiles(files) {
+      const container = document.getElementById('main-container');
+      container.innerHTML = '';
+
+      if (!files || files.length === 0) {
+        container.innerHTML = `<div class="text-slate-400 text-sm col-span-2 text-center py-10">Koi file available nahi hai.</div>`;
+        return;
+      }
+
+      files.forEach(file => {
+        let isFav = favorites.some(f => f.link === file.link);
+        let favClass = isFav ? "text-yellow-400 bg-yellow-400/10 border-yellow-400/30" : "text-slate-400 bg-slate-800 border-slate-700";
+
+        const card = document.createElement('div');
+        card.className = "card-glow rounded-2xl p-5 flex flex-col justify-between space-y-4 relative";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between text-xs font-semibold mb-3">
+              <span class="px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-solid fa-file-pdf"></i> ${file.subject || 'PDF'}
+              </span>
+              <button onclick="toggleFavorite('${file.title.replace(/'/g, "\\'")}', '${file.link}', '${file.className}', '${file.book}', '${file.subject}')" class="w-8 h-8 rounded-xl border ${favClass} flex items-center justify-center transition hover:scale-105">
+                <i class="fa-solid fa-star text-xs"></i>
+              </button>
+            </div>
+            <h3 class="text-base font-bold leading-snug">
+              ${file.title}
+            </h3>
+            <p class="text-[11px] text-slate-400 mt-1">${file.className} • ${file.book}</p>
+          </div>
+          <div class="flex items-center justify-end pt-3 border-t border-slate-800/60">
+            <button onclick="openPdfModal('${file.title.replace(/'/g, "\\'")}', '${file.link}')" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-eye"></i> Preview
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderRecentPdfs() {
+      document.getElementById('page-title').innerText = "Recent PDFs";
+      document.getElementById('page-subtitle').innerText = "Latest added study materials";
+      document.getElementById('breadcrumb-sub').innerHTML = '';
+      document.getElementById('back-btn').style.display = 'none';
+      document.getElementById('home-back-btn').style.display = 'flex';
+      document.getElementById('dashboard-stats').style.display = 'none';
+
+      let recent = [...rawRecords].slice(-10).reverse();
+      renderFiles(recent);
+    }
+
+    function renderFavorites() {
+      document.getElementById('page-title').innerText = "Favorite Books";
+      document.getElementById('page-subtitle').innerText = "Your bookmarked chapters and notes";
+      document.getElementById('breadcrumb-sub').innerHTML = '';
+      document.getElementById('back-btn').style.display = 'none';
+      document.getElementById('home-back-btn').style.display = 'flex';
+      document.getElementById('dashboard-stats').style.display = 'none';
+
+      renderFiles(favorites);
+    }
+
+    function toggleFavorite(title, link, className, book, subject) {
+      let index = favorites.findIndex(f => f.link === link);
+      if (index > -1) {
+        favorites.splice(index, 1);
+      } else {
+        favorites.push({ title, link, className, book, subject });
+      }
+      localStorage.setItem('lib_favorites', JSON.stringify(favorites));
+      updateFavCount();
+
+      if (currentTab === 'favorites') {
+        renderFavorites();
+      } else if (currentTab === 'recent') {
+        renderRecentPdfs();
+      } else if (currentView === 'files') {
+        renderFiles(libraryData[selectedClass][selectedBook]);
+      } else if (currentTab === 'library' && currentView === 'search') {
+        handleSearch();
+      }
+    }
+
+    function updateFavCount() {
+      document.getElementById('fav-count').innerText = favorites.length;
+    }
+
+    // Open PDF Modal with iframe preview
+    function openPdfModal(title, link) {
+      let previewLink = link;
+      if (link.includes('drive.google.com')) {
+        if (link.includes('/view')) {
+          previewLink = link.replace('/view', '/preview');
+        } else if (!link.includes('/preview')) {
+          previewLink = link.replace(/\/d\/(.*?)\/.*/, '/d/$1/preview');
+        }
+      }
+
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('pdfIframe').src = previewLink;
+      document.getElementById('pdfModal').style.display = 'flex';
+    }
+
+    function closePdfModal() {
+      document.getElementById('pdfModal').style.display = 'none';
+      document.getElementById('pdfIframe').src = '';
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+        document.getElementById('fsIcon').className = "fa-solid fa-expand text-xs";
+      }
+    }
+
+    // Full Screen Toggle
+    function toggleFullScreen() {
+      const modalBox = document.getElementById('modalBox');
+      const fsIcon = document.getElementById('fsIcon');
+      
+      if (!document.fullscreenElement) {
+        modalBox.requestFullscreen().catch(err => alert(err.message));
+        fsIcon.className = "fa-solid fa-compress text-xs";
+      } else {
+        document.exitFullscreen();
+        fsIcon.className = "fa-solid fa-expand text-xs";
+      }
+    }
+
+    function handleSearch() {
+      if (currentTab !== 'library') return;
+      const query = document.getElementById('globalSearch').value.toLowerCase().trim();
+      if (query === '') {
+        if (currentView === 'search') renderClasses();
+        return;
+      }
+
+      currentView = 'search';
+      document.getElementById('page-title').innerText = "Search Results";
+      document.getElementById('page-subtitle').innerText = `Matching: "${query}"`;
+      document.getElementById('breadcrumb-sub').innerHTML = ` <i class="fa-solid fa-chevron-right text-[10px] mx-1"></i> <span class="text-white">Search</span>`;
+      document.getElementById('back-btn').style.display = 'flex';
+      document.getElementById('home-back-btn').style.display = 'none';
+      document.getElementById('dashboard-stats').style.display = 'none';
+
+      let matched = rawRecords.filter(item => {
+        return (
+          item.className.toLowerCase().includes(query) ||
+          item.book.toLowerCase().includes(query) ||
+          item.subject.toLowerCase().includes(query) ||
+          item.title.toLowerCase().includes(query)
+        );
+      });
+
+      renderFiles(matched);
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('light-mode');
+    }
+
+    function handleBack() {
+      document.getElementById('globalSearch').value = '';
+      if (currentView === 'books' || currentView === 'search') {
+        renderClasses();
+      } else if (currentView === 'files') {
+        selectClass(selectedClass);
+      }
+    }
+
+    function resetView() {
+      document.getElementById('globalSearch').value = '';
+      switchMainTab('library');
+    }
+
+    initLibrary();
+  </script>
+</body>
+</html>
